@@ -92,26 +92,30 @@
         y: field.h/2,
         r: 20,
         speed: 5,
+        limiter: 20,
         directionX: 1,
         directionY: 1,
         _calcPosition: function () {
-          // verifica se o jogador 1 fez um ponto (x > largura do campo)
+          // verifica se o jogador fez ponto
           if (this.x > field.w - this.r - rightPaddle.w - rightPaddle.x) {
             // verifica se a raquete direita está na posição y da bola
-            if (
-              this.y + this.r > rightPaddle.y &&
-              this.y - this.r < rightPaddle.y + rightPaddle.h
-            ) {
+            if (this.y + this.r > rightPaddle.y && this.y - this.r < rightPaddle.y + rightPaddle.h) {
               // rebate a bola intervertendo o sinal de X
               this._reverseX()
-            } else {
-              // pontuar o jogador 1
+              rightPaddle.paddleSpeedUp()  
+              if (this.speed < this.limiter) {
+                this._speedUp()
+              }
+            } 
+            else {
+              // pontuar o jogador
               score.human++
               this._pointUp()
+              this._resetSpeed()
             }
           }
 
-          // verifica se o jogador 2 fez um ponto (x < 0)
+          // verifica se o computador fez ponto
           if (this.x < this.r + leftPaddle.w + leftPaddle.x) {
             // verifica se a raquete esquerda está na posição y da bola
             if (
@@ -120,18 +124,18 @@
             ) {
               // rebate a bola intervertendo o sinal de X
               this._reverseX()
+              rightPaddle.paddleSpeedUp()  
+              this._speedUp()
             } else {
-              // pontuar o jogador 2
+              // pontuar o computador
               score.cpu++
               this._pointUp()
+              this._resetSpeed()
             }
           }
 
           // verifica as laterais superior e inferior do campo
-          if (
-            (this.y - this.r < 0 && this.directionY < 0) ||
-            (this.y > field.h - this.r && this.directionY > 0)
-          ) {
+          if ((this.y - this.r < 0 && this.directionY < 0) || (this.y > field.h - this.r && this.directionY > 0)) {
             // rebate a bola invertendo o sinal do eixo Y
             this._reverseY()
           }
@@ -143,10 +147,12 @@
           this.directionY *= -1
         },
         _pointUp: function () {
-          rightPaddle.paddleSpeedUp()  
-          this._speedUp()
           this.x = field.w / 2
           this.y = field.h / 2
+        },
+        _resetSpeed: function () {
+            ball.speed = 5
+            rightPaddle.speed = 5
         },
         _speedUp: function () {
           this.speed += 3
@@ -167,8 +173,8 @@
       }
 
         const score = {
-            human: 1,
-            cpu: 3,
+            human: 0,
+            cpu: 0,
             y: field.w/4,
             w: 50,
             draw: function () {
@@ -222,7 +228,8 @@
 
             // Para debug
             //console.log(mouse)
-            console.log(score.human)
+            //console.log(score.human)
+            console.log(ball.speed)
         })
     </script>
 </body>
