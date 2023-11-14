@@ -29,6 +29,30 @@
             y: 0
         }
 
+        const keys = {
+          ArrowUp: false,
+          ArrowDown: false,
+          KeyW: false,
+          KeyS: false
+        }
+
+        document.addEventListener("keydown", function (e) {
+          if (e.code in keys) {
+            keys[e.code] = true;
+          }
+        });
+
+        document.addEventListener("keyup", function (e) {
+          if (e.code in keys) {
+            keys[e.code] = false;
+          }
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+          const urlParams = new URLSearchParams(window.location.search)
+          mode = urlParams.get("mode")
+        });
+        
         const field = {
             w: window.innerWidth,
             h: window.innerHeight,
@@ -58,10 +82,16 @@
             x: 15,
             y: 400,
             w: net.w,
-            h: 100,
+            h: 120,
+            speed: 17,
             _move: function () {
-                // Movimento da raquete e posição do cursor
-                this.y = mouse.y - this.h / 2
+                // Movimento da raquete
+                if (keys.KeyW && this.y > 0) {
+                  this.y -= this.speed
+                }
+                else if (keys.KeyS && this.y + this.h < field.h) {
+                  this.y += this.speed
+                }
             },
             draw: function () {
                 // Raquete esquerda 
@@ -74,23 +104,41 @@
             x: 15,
             y: 400,
             w: net.w,
-            h: 100,
-            speed: 5,
+            h: 120,
+            speedVersus: 17,
+            speedSolo: 5,
+            limiter: 11,
             positionX: field.w - (this.x + net.w),
             _move: function () {
+              if (mode == "solo") {
+                this._moveSolo()
+              }
+              else if (mode == "versus") {
+                this._moveVersus()
+              }
+            },
+            _moveSolo: function () {
                 if (this.y + this.h / 2 < ball.y + ball.r) {
-                    this.y += this.speed
+                    this.y += this.speedSolo
                 }
                 else {
-                    this.y -= this.speed
+                    this.y -= this.speedSolo
                 }
             },
+            _moveVersus: function () {
+              if (keys.ArrowUp && this.y > 0) {
+                this.y -= this.speedVersus;
+              }
+              else if (keys.ArrowDown && this.y + this.h < field.h) {
+                this.y += this.speedVersus;
+              }
+            },
             paddleSpeedUp: function () {
-                this.speed += 2
+                this.speedSolo += 2
             },
             draw: function () {
                 //raquete direita
-                rightPaddlePositionX = field.w - (this.x + net.w)
+                const rightPaddlePositionX = field.w - (this.x + net.w)
                 canvasCtx.fillRect(rightPaddlePositionX, this.y, this.w, this.h)
                 this._move()
             }
@@ -101,7 +149,7 @@
         y: field.h/2,
         r: 20,
         speed: 5,
-        limiter: 20,
+        limiter: 13,
         directionX: 1,
         directionY: 1,
         _calcPosition: function () {
@@ -111,7 +159,9 @@
             if (this.y + this.r > rightPaddle.y && this.y - this.r < rightPaddle.y + rightPaddle.h) {
               // rebate a bola intervertendo o sinal de X
               this._reverseX()
-              rightPaddle.paddleSpeedUp()  
+              if (mode == "solo")
+                if (rightPaddle.speedSolo < rightPaddle.limiter)
+                  rightPaddle.paddleSpeedUp()  
               if (this.speed < this.limiter) {
                 this._speedUp()
               }
@@ -120,7 +170,8 @@
               // pontuar o jogador
               score.human++
               this._pointUp()
-              this._resetSpeed()
+              this._resetBallSpeed()
+              rightPaddle.speedSolo = 5
             }
           }
 
@@ -133,13 +184,17 @@
             ) {
               // rebate a bola intervertendo o sinal de X
               this._reverseX()
-              rightPaddle.paddleSpeedUp()  
-              this._speedUp()
+              if (mode == "solo")
+                if (rightPaddle.speedSolo < rightPaddle.limiter)
+                  rightPaddle.paddleSpeedUp()
+              if (this.speed < this.limiter)
+                this._speedUp()
             } else {
               // pontuar o computador
               score.cpu++
               this._pointUp()
-              this._resetSpeed()
+              this._resetBallSpeed()
+              rightPaddle.speedSolo = 5
             }
           }
 
@@ -147,6 +202,8 @@
           if ((this.y - this.r < 0 && this.directionY < 0) || (this.y > field.h - this.r && this.directionY > 0)) {
             // rebate a bola invertendo o sinal do eixo Y
             this._reverseY()
+            if (this.speed < this.limiter)
+              this.speed += 0.5
           }
         },
         _reverseX: function () {
@@ -159,12 +216,14 @@
           this.x = field.w / 2
           this.y = field.h / 2
         },
-        _resetSpeed: function () {
+        _resetBallSpeed: function () {
             ball.speed = 5
-            rightPaddle.speed = 5
+        },
+        _resetRightPaddleSpeed: function () {
+          rightPaddle.speedSolo = 5
         },
         _speedUp: function () {
-          this.speed += 3
+          this.speed += 1
         },
         _move: function () {
           this.x += this.directionX * this.speed
@@ -201,6 +260,14 @@
         function setup() {
             canvasEl.width = canvasCtx.width = window.innerWidth
             canvasEl.height = canvasCtx.height = window.innerHeight
+
+            // Adicione isso para garantir que as setas não rolem a página
+            window.addEventListener("keydown", function (e) {
+              if (["ArrowUp", "ArrowDown"].includes(e.key)) {
+                e.preventDefault();
+        }
+    });
+
         }
 
         function draw() {
@@ -229,18 +296,13 @@
         function main() {
             animateFrame(main)
             draw()
+            console.log(rightPaddle.speedSolo)
         }
         setup()
         main()
-        canvasEl.addEventListener("mousemove", function (e) {
-            mouse.x = e.pageX
-            mouse.y = e.pageY
 
             // Para debug
-            //console.log(mouse)
-            //console.log(score.human)
-            console.log(ball.speed)
-        })
+        
     </script>
 </body>
 </html>
