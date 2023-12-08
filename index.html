@@ -72,7 +72,7 @@
 <div id="menu">
     <p><button onclick="vsCPU()">Player 1 Vs. CPU</button></p>
     <p><button onclick="vsPlayer()">Player 1 Vs. Player 2</button></p>
-    <p id = "version">0.5 alpha</p>
+    <p id = "version">0.8 beta</p>
 </div>
 
 <div id="logo">
@@ -82,12 +82,13 @@
     function vsCPU() {
         // Lógica para iniciar o jogo
         console.log("Iniciando o jogo...");
-        window.location.href = 'pong.html';
+        window.location.href = 'pong.html?mode=solo';
     }
 
     function vsPlayer() {
         // Lógica para exibir opções
-        console.log("Exibindo opções...");
+        console.log("Exibindo opções...")
+        window.location.href = 'pong.html?mode=versus';
     }
     
 </script>
